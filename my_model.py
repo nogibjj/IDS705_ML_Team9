@@ -181,3 +181,84 @@ demo_resnet_model.compile(
 )
 
 history = demo_resnet_model.fit(train_ds, validation_data=validation_ds, epochs=epochs)
+
+# Visualize the training and validation accuracy and loss
+
+plotter_lib.figure(figsize=(10, 10))
+
+plotter_lib.subplot(2, 1, 1)
+
+plotter_lib.plot(history.history["accuracy"], label="Training Accuracy")
+
+plotter_lib.plot(history.history["val_accuracy"], label="Validation Accuracy")
+
+plotter_lib.legend(loc="lower right")
+
+plotter_lib.ylabel("Accuracy")
+
+plotter_lib.title("Training and Validation Accuracy")
+
+plotter_lib.subplot(2, 1, 2)
+
+plotter_lib.plot(history.history["loss"], label="Training Loss")
+
+plotter_lib.plot(history.history["val_loss"], label="Validation Loss")
+
+plotter_lib.legend(loc="upper right")
+
+plotter_lib.ylabel("Cross Entropy")
+
+plotter_lib.title("Training and Validation Loss")
+
+plotter_lib.xlabel("epoch")
+
+plotter_lib.show()
+
+# Save the model
+
+demo_resnet_model.save("demo_resnet_model.h5")
+
+# Load the model
+
+demo_resnet_model_saved = tflow.keras.models.load_model("demo_resnet_model.h5")
+
+# Predict on a single image
+
+img = Image.open("Data/combined_subset/F0.png")
+
+img = img.resize((224, 224))
+
+img = np.expand_dims(img, axis=0)
+
+img = np.array(img)
+
+img = img / 255.0
+
+prediction = demo_resnet_model_saved.predict(img)
+
+print(prediction)
+
+# Predict on a batch of images
+
+batch_of_images = []
+
+for filename in glob.glob("Data/combined_subset/*.png"):  # assuming png
+    im = Image.open(filename)
+
+    im = im.resize((224, 224))
+
+    im = np.expand_dims(im, axis=0)
+
+    im = np.array(im)
+
+    im = im / 255.0
+
+    batch_of_images.append(im)
+
+batch_of_images = np.array(batch_of_images)
+
+batch_of_images = np.reshape(batch_of_images, (200, 224, 224, 3))
+
+predictions = demo_resnet_model.predict(batch_of_images)
+
+print(predictions)
