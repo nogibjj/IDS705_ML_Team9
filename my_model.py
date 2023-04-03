@@ -109,9 +109,12 @@ IMAGE_SIZE = [224, 224]
 
 batch_size = 32
 
+final_combined_labels_array = np.array(final_combined_labels)
+
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     "Data/combined_subset/",
     labels=final_combined_labels,
+    label_mode="int",
     validation_split=0.2,
     subset="training",
     seed=123,
@@ -126,6 +129,7 @@ validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     subset="validation",
     seed=123,
     labels=final_combined_labels,
+    label_mode="int",
     image_size=IMAGE_SIZE,
     batch_size=batch_size,
 )
@@ -170,10 +174,10 @@ demo_resnet_model.add(Flatten())
 
 demo_resnet_model.add(Dense(512, activation="relu"))
 
-demo_resnet_model.add(Dense(2, activation="softmax"))
+demo_resnet_model.add(Dense(1, activation="sigmoid"))
 
 demo_resnet_model.compile(
-    optimizer=Adam(lr=0.001), loss="categorical_crossentropy", metrics=["accuracy"]
+    optimizer=Adam(lr=0.001), loss="binary_crossentropy", metrics=["accuracy"]
 )
 
 history = demo_resnet_model.fit(train_ds, validation_data=validation_ds, epochs=epochs)
