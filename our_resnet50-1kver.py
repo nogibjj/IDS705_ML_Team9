@@ -248,6 +248,8 @@ labels_ls = np.array([label for batch in labels_arr for label in batch])
 
 # Example of image reconstruction
 # Image.fromarray((imgs_ls[0] * 255).astype(np.uint8)).convert("RGB")
+# solution
+# Image.fromarray((imgs_ls[0] * 1).astype(np.uint8)).convert("RGB")
 
 # roc curve for models
 from sklearn.metrics import roc_curve
