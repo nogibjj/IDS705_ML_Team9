@@ -74,7 +74,7 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     "One1ksetDraft",
     label_mode="binary",
     validation_split=val_ratio,
-    shuffle=True,
+    shuffle=False,
     subset="training",
     seed=417,
     image_size=IMAGE_SIZE,
@@ -84,7 +84,7 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     "One1ksetDraft",
     validation_split=val_ratio,
-    shuffle=True,
+    shuffle=False,
     subset="validation",
     seed=417,
     label_mode="binary",
