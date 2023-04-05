@@ -4,7 +4,8 @@ import os
 import zipfile
 import shutil
 import glob
-import cv2
+
+# import cv2
 import numpy as np
 import argparse
 import tarfile
@@ -24,10 +25,16 @@ def extract_images_tar(tar_file, output_dir):
 
 
 # my code that got me the real images
-# extract_images(r"C:\Users\ericr\Downloads\RealFaces00000.zip", r"C:\Users\ericr\Downloads\TargetErase\Real")
+extract_images(
+    r"C:\Users\ericr\Downloads\RealFaces00000.zip",
+    r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Real",
+)
 
 # my code that got me the fake images
-# extract_images_tar(r"C:\Users\ericr\Downloads\1m_faces_00.tar", r"C:\Users\ericr\Downloads\TargetErase\Fake")
+extract_images_tar(
+    r"C:\Users\ericr\Downloads\1m_faces_00.tar",
+    r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Fake",
+)
 
 # def resize_images(input_dir, output_dir, size):
 #     """Resize images in input directory and save to output directory"""
@@ -75,7 +82,7 @@ def resize_and_erase_images(
         iter += 1
         # erase image
         os.remove(image)
-        if iter >= cap:
+        if iter >= (cap + 1):
             break
     print("Done with " + flag)
 
@@ -84,15 +91,15 @@ def resize_and_erase_images(
 size = (256, 256)
 # has a scalability advantage if the directory structure does not vary, can be for looped
 resize_and_erase_images(
-    r"C:\Users\ericr\Downloads\TargetErase\Real\00000",
-    r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\tffriendlydirectory\Real",
+    r"TemporaryFiles\Real\00000",
+    "One1ksetDraft\Real",
     size,
     "png",
     flag=True,
 )
 resize_and_erase_images(
-    r"C:\Users\ericr\Downloads\TargetErase\Fake\1m_faces_00",
-    r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\tffriendlydirectory\Fake",
+    r"TemporaryFiles\Fake\1m_faces_00",
+    "One1ksetDraft\Fake",
     size,
     "jpg",
     flag=False,
