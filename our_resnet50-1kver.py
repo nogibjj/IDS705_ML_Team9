@@ -233,6 +233,36 @@ test_ds_pred = demo_resnet_model.predict(test_ds)
 prediction_time = time.time() - prediction_time
 print("Prediction time for test set: {} seconds".format(prediction_time))
 evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
+
+# processing the predictions
+imgs_arr = []
+labels_arr = []
+
+for img, label in test_ds.take(-1):
+    imgs_arr.append(img.numpy())
+    labels_arr.append(label.numpy())
+
+imgs_ls = [img for batch in imgs_arr for img in batch]
+labels_ls = np.array([label for batch in labels_arr for label in batch])
+
+# roc curve for models
+from sklearn.metrics import roc_curve
+
+fpr, tpr, thresh = roc_curve(labels_ls, test_ds_pred)
+# plot roc curve
+plotter_lib.plot(fpr, tpr, linestyle="--", color="orange", label="ResNet50")
+# axis labels
+plotter_lib.xlabel("False Positive Rate")
+plotter_lib.ylabel("True Positive rate")
+plotter_lib.legend(loc="best")
+plotter_lib.title("ROC curve")
+plotter_lib.show()
+
+
+# from sklearn.metrics import classification_report
+# classification_report(labels_ls, test_ds_pred.round())
+
+
 # Load the model
 
 # demo_resnet_model_saved = tflow.keras.models.load_model("demo_resnet_model.h5")
