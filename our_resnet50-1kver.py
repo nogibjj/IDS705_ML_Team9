@@ -239,11 +239,15 @@ imgs_arr = []
 labels_arr = []
 
 for img, label in test_ds.take(-1):
-    imgs_arr.append(img.numpy())
+    print(img.dtype)
+    imgs_arr.append(img.numpy(d))
     labels_arr.append(label.numpy())
 
 imgs_ls = [img for batch in imgs_arr for img in batch]
 labels_ls = np.array([label for batch in labels_arr for label in batch])
+
+# Example of image reconstruction
+# Image.fromarray((imgs_ls[0] * 255).astype(np.uint8)).convert("RGB")
 
 # roc curve for models
 from sklearn.metrics import roc_curve
