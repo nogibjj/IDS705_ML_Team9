@@ -38,6 +38,7 @@ from tensorflow.keras.optimizers import Adam
 
 real_data_directory = "Data/Real"
 fake_data_directory = "Data/Fake"
+from PIL import Image
 
 img = Image.open(r"Data\Real\00998.png")
 
@@ -105,14 +106,18 @@ for filename in glob.glob("Data/Real/*.png"):  # assuming png
         break
 
 
-IMAGE_SIZE = [224, 224]
+IMAGE_SIZE = [128, 128]
 
 batch_size = 32
 
 final_combined_labels_array = np.array(final_combined_labels)
 
+
+# adjustment for tensorflow 2.0
+
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "Data/combined_subset/",
+    # "Data/combined_subset",
+    "dataforoldtf",
     labels=final_combined_labels,
     label_mode="int",
     validation_split=0.2,
@@ -124,7 +129,8 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
 
 
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "Data/combined_subset/",
+    # "Data/combined_subset",
+    "dataforoldtf",
     validation_split=0.2,
     subset="validation",
     seed=123,
@@ -133,6 +139,18 @@ validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     image_size=IMAGE_SIZE,
     batch_size=batch_size,
 )
+tflow.debugging.set_log_device_placement(True)
+
+print("Num GPUs Available: ", len(tflow.config.list_physical_devices("GPU")))
+
+
+# Test for gpu code
+# Create some tensors
+a = tflow.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+b = tflow.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+c = tflow.matmul(a, b)
+
+print(c)
 
 
 # Visualize six random images from combined list
@@ -156,9 +174,40 @@ for images, labels in train_ds.take(1):
 
 demo_resnet_model = Sequential()
 
+# testing the cpu time
+import time
+
+cpu_time = time.time()
+with tflow.device("/CPU:0"):
+    # Create some tensors
+    a = tflow.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    b = tflow.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    c = tflow.matmul(a, b)
+cpu_time = time.time() - cpu_time
+
+print("CPU time: ", cpu_time)
+
+# testing the gpu time
+
+gpu_time = time.time()
+
+with tflow.device("/GPU:0"):
+    # Create some tensors
+
+    a = tflow.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+    b = tflow.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+
+    c = tflow.matmul(a, b)
+
+gpu_time = time.time() - gpu_time
+
+print("GPU time: ", gpu_time)
+
+
 pretrained_model_for_demo = tflow.keras.applications.ResNet50(
     include_top=False,
-    input_shape=(224, 224, 3),
+    input_shape=(128, 128, 3),
     pooling="avg",
     classes=5,
     weights="imagenet",
@@ -226,7 +275,7 @@ demo_resnet_model_saved = tflow.keras.models.load_model("demo_resnet_model.h5")
 
 img = Image.open("Data/combined_subset/F0.png")
 
-img = img.resize((224, 224))
+img = img.resize((128, 128))
 
 img = np.expand_dims(img, axis=0)
 
@@ -245,7 +294,7 @@ batch_of_images = []
 for filename in glob.glob("Data/combined_subset/*.png"):  # assuming png
     im = Image.open(filename)
 
-    im = im.resize((224, 224))
+    im = im.resize((128, 128))
 
     im = np.expand_dims(im, axis=0)
 
@@ -262,3 +311,79 @@ batch_of_images = np.reshape(batch_of_images, (200, 224, 224, 3))
 predictions = demo_resnet_model.predict(batch_of_images)
 
 print(predictions)
+
+
+### From reference
+
+plotter_lib.figure(figsize=(8, 8))
+
+epochs_range = range(epochs)
+
+plotter_lib.plot(epochs_range, history.history["accuracy"], label="Training Accuracy")
+
+plotter_lib.plot(
+    epochs_range, history.history["val_accuracy"], label="Validation Accuracy"
+)
+
+plotter_lib.axis(ymin=0.4, ymax=1)
+
+plotter_lib.grid()
+
+plotter_lib.title("Model Accuracy")
+
+plotter_lib.ylabel("Accuracy")
+
+plotter_lib.xlabel("Epochs")
+
+plotter_lib.legend(["train", "validation"])
+
+plotter_lib.show()
+
+plotter_lib.savefig("output-plot.png")
+
+
+# matching dimension images step
+
+import cv2
+
+sample_image = cv2.imread("Data\combined_subset\R64.png")
+
+sample_image_resized = cv2.resize(sample_image, (IMAGE_SIZE))
+
+sample_image = np.expand_dims(sample_image_resized, axis=0)
+
+image_pred = demo_resnet_model.predict(sample_image)
+
+# image_output_class=class_names[np.argmax(image_pred)]
+
+# print("The predicted class is", image_output_class)
+
+
+# Leveraging prefetching
+
+# AUTOTUNE = tflow.data.experimental.AUTOTUNE
+AUTOTUNE = tflow.data.AUTOTUNE
+
+
+tflow.test.gpu_device_name()
+
+tflow.config.experimental.list_physical_devices("GPU")
+
+
+# Activating gpu
+
+# gpus = tflow.config.experimental.list_physical_devices("GPU")
+
+# if gpus:
+
+#     try:
+
+#         tflow.config.experimental.set_virtual_device_configuration(
+
+#             gpus[0], [tflow.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)]
+
+#         )
+
+#     except RuntimeError as e:
+
+#         print(e)
