@@ -27,7 +27,7 @@ import numpy as np
 import PIL as image_lib
 
 import tensorflow as tflow
-
+from tensorflow.keras.metrics import Accuracy
 from tensorflow.keras.layers import Flatten
 
 from keras.layers.core import Dense
@@ -80,7 +80,7 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     image_size=IMAGE_SIZE,
     batch_size=batch_size,
 )
-
+train_ds.shuffle(1000, reshuffle_each_iteration=False)
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     "One1ksetDraft",
     validation_split=val_ratio,
@@ -117,6 +117,17 @@ for img, label in test_ds.take(-1):
 t_lab_broken = np.array([float(label) for batch in t_lab for label in batch])
 print(f"Test Set Labels: {np.unique(t_lab_broken, return_counts=True)}")
 np.unique(t_lab_broken, return_counts=True)
+
+# check for classes in the train_ds dataset
+# class_names = validation_ds.class_names
+tr_im = []
+tr_lab = []
+for img, label in train_ds.take(-1):
+    tr_im.append(img.numpy())
+    tr_lab.append(label.numpy())
+tr_lab_broken = np.array([float(label) for batch in tr_lab for label in batch])
+print(f"Train Set Labels: {np.unique(tr_lab_broken, return_counts=True)}")
+np.unique(tr_lab_broken, return_counts=True)
 
 print("Num GPUs Available: ", len(tflow.config.list_physical_devices("GPU")))
 print(tflow.config.list_physical_devices("GPU"))
@@ -255,18 +266,115 @@ test_ds_pred = demo_resnet_model.predict(test_ds)
 prediction_time = time.time() - prediction_time
 print("Prediction time for test set: {} seconds".format(prediction_time))
 evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
-
+evaluation
 # processing the predictions
 imgs_arr = []
 labels_arr = []
+# labels_arr = np.array([])
+combined = []
 
 for img, label in test_ds.take(-1):
-    print(img.dtype)
+    # print(img.dtype)
     imgs_arr.append(img.numpy())
     labels_arr.append(label.numpy())
+    pred = np.round(demo_resnet_model.predict(img))
+    # pred = demo_resnet_model.predict(img)
+    combined.append((img.numpy(), label.numpy(), pred))
+    # labels_arr = np.append(labels_arr, label.numpy())
 
 imgs_ls = [img for batch in imgs_arr for img in batch]
 labels_ls = np.array([label for batch in labels_arr for label in batch])
+
+counter_other = 0
+
+bad_classifications = {}
+batch_num = 0
+
+# MAJOR PROGRESS FOUND HERE
+#### BAD IMAGE ISOLATION ######
+for imagenes, etiquetas, predicciones in combined:
+
+    # counter_other += np.sum((etiquetas != np.round((predicciones))))
+
+    misclassifieds = etiquetas - np.round((predicciones))
+    counter_other += np.sum((abs(misclassifieds)))
+
+    # bad_classifications.append(
+    #     np.where((misclassifieds > 0), misclassifieds)
+    # )
+    # misclassifieds
+    target = []
+    j = 0
+    for i in misclassifieds:
+        print(i)
+        if i == 1:
+
+            target.append(j)
+
+        elif i == -1:
+
+            target.append(-j)
+
+        j += 1
+    bad_classifications[batch_num] = target
+    batch_num += 1
+
+    # print("ok")
+# I had issues importing my own functions,
+# so I just copied the code here
+import glob
+
+
+def erase_images(output_dir, format="jpg"):
+    """Erase images in output directory"""
+    for image in glob.glob(os.path.join(output_dir, ("*." + format))):
+        os.remove(image)
+
+
+erase_images("Misclassifications\Real", format="png")
+erase_images("Misclassifications\Fake", format="png")
+# Don't trust the numbers of the pictures, they
+# are true to the batch only
+# Isolations of bad images
+for key, value in bad_classifications.items():
+
+    misclassifieds = bad_classifications[
+        key
+    ]  # tuple of lists of indices of misclassified images
+
+    for ind in misclassifieds:
+        print(ind)
+        if ind < 0:
+
+            flag = "Fake"
+
+            ind = abs(ind)
+
+        else:
+
+            flag = "Real"
+
+        image_array = combined[key][0][ind]
+
+        reconstructed_image = Image.fromarray(
+            (image_array * 1).astype(np.uint8)
+        ).convert("RGB")
+
+        reconstructed_image.save(f"Misclassifications\{flag}\{flag}{ind+1}.png")
+
+
+###### BAD IMAGE ISOLATION ######
+
+
+# labels_ls shares the same dimensions as test_ds_pred
+# now we round
+# test_ds_pred_rounded = np.round(test_ds_pred)
+test_ds_pred_other_class = 1 - test_ds_pred
+test_ds_pred_rounded = np.round(test_ds_pred_other_class)
+np.sum(test_ds_pred_rounded == labels_ls) / len(labels_ls)
+
+# why does this gave me such a low accuracy?
+# accuracy = np.sum(test_ds_pred_rounded == labels_ls) / len(labels_ls)
 
 # Example of image reconstruction
 # Image.fromarray((imgs_ls[0] * 255).astype(np.uint8)).convert("RGB")

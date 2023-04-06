@@ -44,10 +44,11 @@ extract_images_tar(
 #         cv2.imwrite(os.path.join(output_dir, os.path.basename(image)), img)
 
 # erase image files in output directory
-# def erase_images(output_dir):
-#     """Erase images in output directory"""
-#     for image in glob.glob(os.path.join(output_dir, '*.jpg')):
-#         os.remove(image)
+def erase_images(output_dir):
+    """Erase images in output directory"""
+    for image in glob.glob(os.path.join(output_dir, "*.jpg")):
+        os.remove(image)
+
 
 # for directory in C:\Users\ericr\Downloads\TargetErase\Fake
 # save the images to C:\Users\ericr\Downloads\Team9images\Fake
