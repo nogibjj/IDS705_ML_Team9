@@ -104,6 +104,7 @@ for img, label in val_ds.take(-1):
     v_im.append(img.numpy())
     v_lab.append(label.numpy())
 v_lab_broken = np.array([float(label) for batch in v_lab for label in batch])
+print(f"Validation Set Labels: {np.unique(v_lab_broken, return_counts=True)}")
 np.unique(v_lab_broken, return_counts=True)
 
 # check for classes in the test_ds dataset
@@ -114,6 +115,7 @@ for img, label in test_ds.take(-1):
     t_im.append(img.numpy())
     t_lab.append(label.numpy())
 t_lab_broken = np.array([float(label) for batch in t_lab for label in batch])
+print(f"Test Set Labels: {np.unique(t_lab_broken, return_counts=True)}")
 np.unique(t_lab_broken, return_counts=True)
 
 print("Num GPUs Available: ", len(tflow.config.list_physical_devices("GPU")))
@@ -201,7 +203,7 @@ demo_resnet_model.compile(
 
 history = demo_resnet_model.fit(
     train_ds,
-    validation_data=validation_ds,
+    validation_data=val_ds,
     epochs=epochs,
     verbose=1,
     # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
@@ -260,7 +262,7 @@ labels_arr = []
 
 for img, label in test_ds.take(-1):
     print(img.dtype)
-    imgs_arr.append(img.numpy(d))
+    imgs_arr.append(img.numpy())
     labels_arr.append(label.numpy())
 
 imgs_ls = [img for batch in imgs_arr for img in batch]
