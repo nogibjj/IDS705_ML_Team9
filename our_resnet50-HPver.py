@@ -5,7 +5,9 @@ import os
 import matplotlib.pyplot as plt
 
 import numpy as np
+
 import glob
+
 import PIL as image_lib
 
 import tensorflow as tflow
@@ -27,30 +29,59 @@ import numpy as np
 import PIL as image_lib
 
 import tensorflow as tflow
+
 from tensorflow.keras.metrics import Accuracy
+
 from tensorflow.keras.layers import Flatten
+
 
 from keras.layers.core import Dense
 
 from tensorflow.keras.models import Sequential
 
 from tensorflow.keras.optimizers import Adam
+
 import time
+
 from PIL import Image
 
+# Timing the script
 script_time = time.time()
+
+
 
 # Apparently for monitoring, it only shows in terminals
 tflow.debugging.set_log_device_placement(True)
+
+
 
 # Set up Prefetching
 AUTOTUNE = tflow.data.AUTOTUNE
 
 # Image opening test
+# This lets us know that the folders are in optimal condition
+# For the first few test runs, we will utilize the One1KsetDraft
 
+try:
+    Image.open(r"Data/Real/00998.png")
+
+    print("Image opened successfully")
+
+except:
+    print("Image not found")
+
+
+### Image opening test finished
+
+
+
+# Set up the image size, this is the default for ResNet50
 IMAGE_SIZE = (256, 256)  # height, width
 
 batch_size = 32  # 32 is default recommendation for vision models
+
+
+
 
 # calculate length  of elements in One1ksetDraft
 n_samples = 0
@@ -68,6 +99,8 @@ for each_folder in os.listdir("One1ksetDraft"):
 train_ratio = 0.7
 val_ratio = 0.3
 
+
+# Create the dataset
 # adjustment for tensorflow 2.0
 
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
@@ -78,9 +111,29 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     subset="training",
     seed=417,
     image_size=IMAGE_SIZE,
-    batch_size=batch_size,
+    batch_size=None, # Changed from batch_size 32 to none
+    # color_mode="grayscale",
 )
-train_ds.shuffle(1000, reshuffle_each_iteration=False)
+
+
+### Validating Batches ###
+# for the train split, this is to validate that
+# the batching worked
+count = 0
+img_gs = []
+label_gs = []
+for img, label in train_ds.take(-1):
+    count += 1
+    img_gs.append(img.numpy())
+    label_gs.append(label.numpy())
+print(f"Number of batches: {count}")
+
+### Validating Batches Complete
+
+### Enhancing reproducibility
+train_ds.shuffle(count, reshuffle_each_iteration=False)
+
+### Separating the validation set
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     "One1ksetDraft",
     validation_split=val_ratio,
@@ -88,9 +141,13 @@ validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     subset="validation",
     seed=417,
     label_mode="binary",
-    image_size=IMAGE_SIZE,
-    batch_size=batch_size,
+    image_size = IMAGE_SIZE,
+    batch_size = None, # Changed from batch_size 32 to none
+    # color_mode="grayscale",
 )
+
+
+
 # for the test split
 val_batches = tflow.data.experimental.cardinality(validation_ds)
 test_ds = validation_ds.take((2 * val_batches) // 3)
@@ -135,27 +192,6 @@ print("Num CPUs Available: ", len(tflow.config.list_physical_devices("CPU")))
 print(tflow.config.list_physical_devices("CPU"))
 
 
-with tflow.device("/GPU:0"):
-    gpu_time = time.time()
-    # Test for gpu code
-    # Create some tensors
-    a = tflow.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    b = tflow.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    c = tflow.matmul(a, b)
-    gpu_time = time.time() - gpu_time
-    print("GPU time for basic tensor operation: {} seconds".format(gpu_time))
-
-with tflow.device("/CPU:0"):
-    cpu_time = time.time()
-    # Test for cpu code
-    # Create some tensors
-    a = tflow.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    b = tflow.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    c = tflow.matmul(a, b)
-    cpu_time = time.time() - cpu_time
-    print("CPU time for basic tensor operation: {} seconds".format(cpu_time))
-
-
 # Visualize six random images from combined list
 
 # import matplotlib.pyplot as plotter_lib
@@ -197,6 +233,20 @@ demo_resnet_model.add(Dense(512, activation="relu"))
 
 demo_resnet_model.add(Dense(1, activation="sigmoid"))
 
+
+### Hyperparameter Tuning ###
+
+optimizers = [Adam(learning_rate=0.001), Adam(learning_rate=0.0001), Adam(learning_rate=0.00001)]
+
+batch_sizes = [32, 64, 128]
+
+epochs = [10, 20, 30]
+
+callbacks = [tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)]
+
+### Hyperparameter Tuning Complete ###
+
+
 demo_resnet_model.compile(
     optimizer=Adam(learning_rate=0.001),
     loss="binary_crossentropy",
@@ -217,6 +267,7 @@ history = demo_resnet_model.fit(
     validation_data=val_ds,
     epochs=epochs,
     verbose=1,
+    shuffle = False, # For reproducibility
     # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
 )
 
