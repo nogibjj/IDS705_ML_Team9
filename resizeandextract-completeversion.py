@@ -4,8 +4,6 @@ import os
 import zipfile
 import shutil
 import glob
-
-# import cv2
 import numpy as np
 import argparse
 import tarfile
@@ -24,42 +22,65 @@ def extract_images_tar(tar_file, output_dir):
         tar_ref.extractall(output_dir)
 
 
+### Retrieving Real Faces ###
+
 # my code that got me the real images
-extract_images(
-    r"C:\Users\ericr\Downloads\RealFaces00000.zip",
-    r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Real",
-)
+n = 1000  # Have to tweak this according to the naming scheme of the zip files
 
+for i in range(0, n):
+    extract_images(
+        r"C:\Users\ericr\Downloads\RealFaces0000" + str(i) + ".zip",
+        r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Real",
+    )
+
+# Reference for the above code
+# extract_images(
+#     r"C:\Users\ericr\Downloads\RealFaces00000.zip",
+#     r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Real",
+# )
+
+### Retrieving Real Faces ###
+
+
+### Retrieving Fake Faces ###
 # my code that got me the fake images
-extract_images_tar(
-    r"C:\Users\ericr\Downloads\1m_faces_00.tar",
-    r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Fake",
-)
+m = 1000  # Have to tweak this according to the naming scheme of the tar files
+for i in range(0, m):
+    extract_images_tar(
+        r"C:\Users\ericr\Downloads\1m_faces_0" + str(i) + ".tar",
+        r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Fake",
+    )
 
-# def resize_images(input_dir, output_dir, size):
-#     """Resize images in input directory and save to output directory"""
-#     for image in glob.glob(os.path.join(input_dir, '*.jpg')):
-#         img = cv2.imread(image)
-#         img = cv2.resize(img, size)
-#         cv2.imwrite(os.path.join(output_dir, os.path.basename(image)), img)
+# Reference for the above code
+# extract_images_tar(
+#     r"C:\Users\ericr\Downloads\1m_faces_00.tar",
+#     r"C:\Users\ericr\Desktop\IDS 705 - Machine Learning\projectv2repo\IDS705_ML_Team9\TemporaryFiles\Fake",
+# )
 
-# erase image files in output directory
-def erase_images(output_dir):
-    """Erase images in output directory"""
-    for image in glob.glob(os.path.join(output_dir, "*.jpg")):
-        os.remove(image)
+### Retrieving Fake Faces ###
 
 
-# for directory in C:\Users\ericr\Downloads\TargetErase\Fake
-# save the images to C:\Users\ericr\Downloads\Team9images\Fake
-# for directory in C:\Users\ericr\Downloads\TargetErase\Real
-# save the images to C:\Users\ericr\Downloads\Team9images\Real
+# Establishing the sample size
+ratio = 0.1
+np.random.seed(123)
+real_samples = np.random.choice(n, n * ratio, replace=False)
+fake_samples = np.random.choice(m, m * ratio, replace=False)
 
+
+### Resizing and Erasing Images ###
+### Image Extraction into the Sample and Final Datasets ###
 from PIL import Image
 
 
 def resize_and_erase_images(
-    input_dir, output_dir, size, file_format, flag=True, cap=1000
+    input_dir,
+    output_dir,
+    sample_dir,
+    size,
+    file_format,
+    sample,
+    flag=True,
+    cap=1000,
 ):
     """Resize images in input directory and save to output directory"""
     file_format_string = "*." + file_format
@@ -80,6 +101,8 @@ def resize_and_erase_images(
             continue
 
         img.save(os.path.join(output_dir, (flag + str(iter) + ".png")))
+        if (iter - 1) in sample:
+            img.save(os.path.join(sample_dir, (flag + str(iter) + ".png")))
         iter += 1
         # erase image
         os.remove(image)
@@ -88,46 +111,28 @@ def resize_and_erase_images(
     print("Done with " + flag)
 
 
-# test run for real images
-size = (256, 256)
+### Resizing and Erasing Images ###
+### Image Extraction into the Sample and Final Datasets ###
+
+
+# test run for hyperparameter sample images
+size = (512, 512)  # Will downscale in model file
 # has a scalability advantage if the directory structure does not vary, can be for looped
 resize_and_erase_images(
-    r"TemporaryFiles\Real\00000",
-    "One1ksetDraft\Real",
+    r"TempFiles/Real",
+    "FullDataset/Real",
+    "SampleDataset/Real",
     size,
     "png",
     flag=True,
+    cap=1000,
 )
 resize_and_erase_images(
-    r"TemporaryFiles\Fake\1m_faces_00",
-    "One1ksetDraft\Fake",
+    r"TempFiles/Fake",
+    "FullDataset/Fake",
+    "SampleDataset/Fake",
     size,
     "jpg",
     flag=False,
+    cap=1000,
 )
-
-
-# def main():
-#     """Main function"""
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument(
-#         "--input_dir",
-#         type=str,
-#         default="C:\\Users\\ericr\\Downloads\\TargetErase\\Fake",
-#         help="Input directory",
-#     )
-#     parser.add_argument(
-#         "--output_dir",
-#         type=str,
-#         default="C:\\Users\\ericr\\Downloads\\Team9images\\Fake",
-#         help="Output directory",
-#     )
-#     parser.add_argument(
-#         "--size", type=int, nargs=2, default=(64, 64), help="Output image size"
-#     )
-#     args = parser.parse_args()
-
-#     # erase_images(args.output_dir)
-#     # extract_images(args.input_dir, args.output_dir)
-#     # extract_images_tar(args.input_dir, args.output_dir)
-#     resize_images(args.input_dir, args.output_dir, args.size)
