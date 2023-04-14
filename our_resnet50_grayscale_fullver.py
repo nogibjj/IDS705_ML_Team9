@@ -416,9 +416,8 @@ for key, value in bad_classifications.items():
         image_array = combined[key][0][new_ind]
 
         reconstructed_image = Image.fromarray(
-            (image_array.astype(np.uint8).reshape(256, 256))
-        )
-        # ).convert("RGB")
+            (image_array * 1).astype(np.uint8)
+        ).convert("RGB")
 
         # use old ind for naming
         reconstructed_image.save(f"Misclassifications\Gray{flag}\{flag}{ind+1}.png")
