@@ -61,12 +61,38 @@ AUTOTUNE = tflow.data.AUTOTUNE
 # For the first few test runs, we will utilize the One1KsetDraft
 
 try:
-    Image.open(r"Data/Real/00998.png")
-
+    Image.open(".\grayscale1kdraft\Real\Real1.png")
+    imgray = Image.open(".\grayscale1kdraft\Real\Real1.png")
+    imgray.show()
     print("Image opened successfully")
-
+    # turn image to array
+    imgray = np.array(imgray)
+    imgray
 except:
     print("Image not found")
+
+for img in glob.glob(".\grayscale1kdraft\Real\*.png"):
+    # get image name
+    img_name = img.split("\\")[-1]
+    imgray = Image.open(img)
+    imgray = np.array(imgray)
+    imgray = np.repeat(imgray[..., np.newaxis], 3, -1)
+    print(imgray.shape)
+    # convert to image
+    imgray = Image.fromarray(imgray)
+    imgray.save(f".\one1krgbgray\Real\{img_name}")
+
+for img in glob.glob(".\grayscale1kdraft\Fake\*.png"):
+    # get image name
+    img_name = img.split("\\")[-1]
+    imgray = Image.open(img)
+    imgray = np.array(imgray)
+    imgray = np.repeat(imgray[..., np.newaxis], 3, -1)
+    print(imgray.shape)
+    # convert to image
+    imgray = Image.fromarray(imgray)
+    imgray.save(f".\one1krgbgray\Fake\{img_name}")
+np.repeat(imgray[..., np.newaxis], 3, -1)
 
 
 ### Image opening test finished
@@ -84,10 +110,10 @@ for each_folder in os.listdir("One1ksetDraft"):
     print("Folder: {}".format(each_folder))
     print(
         "Number of images: {}".format(
-            len(os.listdir("One1ksetDraft/{}".format(each_folder)))
+            len(os.listdir("one1krgbgray/{}".format(each_folder)))
         )
     )
-    n_samples += len(os.listdir("One1ksetDraft/{}".format(each_folder)))
+    n_samples += len(os.listdir("one1krgbgray/{}".format(each_folder)))
 
 
 # the ratio for the splits
@@ -99,7 +125,7 @@ val_ratio = 0.3
 # adjustment for tensorflow 2.0
 
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "One1ksetDraft",
+    "one1krgbgray",
     label_mode="binary",
     validation_split=val_ratio,
     shuffle=True,
@@ -107,7 +133,7 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     seed=417,
     image_size=IMAGE_SIZE,
     batch_size=batch_size,  # Changed from batch_size 32 to none
-    color_mode="grayscale",
+    # color_mode="grayscale",
 )
 
 
@@ -130,7 +156,7 @@ train_ds.shuffle(count, reshuffle_each_iteration=False)
 
 ### Separating the validation set
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "One1ksetDraft",
+    "one1krgbgray",
     validation_split=val_ratio,
     shuffle=True,
     subset="validation",
@@ -138,7 +164,7 @@ validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     label_mode="binary",
     image_size=IMAGE_SIZE,
     batch_size=batch_size,  # Changed from batch_size 32 to none
-    color_mode="grayscale",
+    # color_mode="grayscale",
 )
 
 
@@ -210,7 +236,7 @@ IMAGE_SIZE_INT = 256
 IMAGE_SIZE = (256, 256)  # height, width
 pretrained_model_for_demo = tflow.keras.applications.ResNet50(
     include_top=False,
-    input_shape=(IMAGE_SIZE_INT, IMAGE_SIZE_INT, 1),
+    input_shape=(IMAGE_SIZE_INT, IMAGE_SIZE_INT, 3),
     pooling="avg",
     weights="imagenet",
 )
@@ -389,7 +415,9 @@ for key, value in bad_classifications.items():
 
         image_array = combined[key][0][new_ind]
 
-        reconstructed_image = Image.fromarray((image_array.astype(np.uint8).reshape(256,256)))
+        reconstructed_image = Image.fromarray(
+            (image_array.astype(np.uint8).reshape(256, 256))
+        )
         # ).convert("RGB")
 
         # use old ind for naming
