@@ -155,6 +155,7 @@ def resize_and_erase_images(
 
         except:
             print(f"Image at {iter} is not a valid image")
+            os.remove(image)
             continue
 
         img.save(os.path.join(output_dir, (flag + str(iter) + ".png")))
@@ -166,7 +167,7 @@ def resize_and_erase_images(
             break
         print(f"Image count is {iter-1} for {flag} images")
     print("Done with " + flag)
-    return iter
+    return iter - 1
 
 
 im_size = (256, 256)  # Will downscale in model file
@@ -192,6 +193,36 @@ resize_and_erase_images(
     file_format="jpg",
     cap=cap_imposed_by_real,
 )
+
+
+# balance the dataset
+real_num = len(os.listdir("tenKDataset\Real"))
+fake_num = len(os.listdir("tenKDataset\Fake"))
+print("Final Real Images:", real_num)
+print("Final Fake Images:", fake_num)
+
+
+### Balancing the Dataset : Code here if needed ###
+
+# import numpy as np
+
+# if real_num > fake_num:
+
+#     for i in range(real_num - fake_num):
+#         np.random.seed(i)
+#         j = np.random.randint(0, real_num)
+#         os.remove("tenKDataset\Real\Real" + str(j) + ".png")
+
+# elif fake_num > real_num:
+#     for i in range(fake_num - real_num):
+#         np.random.seed(i)
+#         j = np.random.randint(0, fake_num)
+#         os.remove("tenKDataset\Fake\Fake" + str(j) + ".png")
+
+# else: # n == m
+#     print("The dataset is balanced")
+#     pass
+
 
 ### Archiving the Sample Code for sampling images ###
 
