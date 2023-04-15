@@ -92,6 +92,19 @@ for each_folder in os.listdir("tenKDataset"):
     )
     n_samples += len(os.listdir("tenKDataset/{}".format(each_folder)))
 
+# dataset_path = r".\tenKDataset"
+# dataset_path_real = r".\tenKDataset\Real"
+# dataset_path_fake = ".\tenKDataset\Fake"
+
+# for folder in os.listdir(dataset_path):
+#     print(folder)
+#     for img in glob.glob(os.path.join(dataset_path, folder, "*.png")):
+#         print(img)   
+#         shutil.move(img, ".\TemporaryFiles\Real")
+#     # remove folder after moving images
+#     os.rmdir(os.path.join(".\TemporaryFiles\Real", folder))
+
+
 
 # the ratio for the splits
 train_ratio = 0.7
@@ -282,54 +295,251 @@ history = demo_resnet_model.fit(
     shuffle=False,  # For reproducibility
     # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
 )
+model_val_tr_results = history.history
 
-# # Visualize the training and validation accuracy and loss
+# write the model_val_tr_results to a file
+with open("model_val_tr_results.txt", "w") as file:
+    file.write(str(model_val_tr_results))
 
-# plotter_lib.figure(figsize=(10, 10))
+# processing the predictions
+imgs_arr_val = []
+labels_arr_val = []
+pred_arr_val = []
+combined_val = []
 
-# plotter_lib.subplot(2, 1, 1)
+for img, label in val_ds.take(-1):
+    imgs_arr_val.append(img.numpy())
+    labels_arr_val.append(label.numpy())
+    pred_val = demo_resnet_model.predict(img)
+    pred_arr_val.append(pred_val)
+    combined_val.append((img.numpy(), label.numpy(), pred_val))
 
-# plotter_lib.plot(history.history["accuracy"], label="Training Accuracy")
+val_label_final = np.array([])
+val_pred_final = np.array([])
+val_counter = 0
 
-# plotter_lib.plot(history.history["val_accuracy"], label="Validation Accuracy")
+for im_val, label_val, pred_val in combined_val:
+    
+    val_label_final = np.append(val_label_final, label_val)
+    val_pred_final = np.append(val_pred_final, pred_val)
 
-# plotter_lib.legend(loc="lower right")
+    # Sanity checking the misclassifications
+    misclassifieds = label_val - np.round((pred_val))
+    val_counter += np.sum((abs(misclassifieds)))
 
-# plotter_lib.ylabel("Accuracy")
+print(f"Number of misclassified images in the validation set: {val_counter}")
 
-# plotter_lib.title("Training and Validation Accuracy")
 
-# plotter_lib.subplot(2, 1, 2)
 
-# plotter_lib.plot(history.history["loss"], label="Training Loss")
+y = np.concatenate([y for x, y in val_ds], axis=0)
+x = np.concatenate([x for x, y in val_ds], axis=0)
+pred = demo_resnet_model.predict(x)
 
-# plotter_lib.plot(history.history["val_loss"], label="Validation Loss")
+# imagenes =np.array([])
+# labels = np.array([])
+# predictions_probas = np.array([])
+# predictions = np.array([])
+ims = []
+labs = []
+probs = []
+preds = []
 
-# plotter_lib.legend(loc="upper right")
+ls = []
+n = 3000
+while n != 0:
+    ims = []
+    labs = []
+    probs = []
+    preds = []
+    for image, label in val_ds:
+        # print(image.shape, label.shape)
+        # imagenes = np.concatenate((imagenes, image), axis=0)
+        # labels = np.concatenate((labels, label), axis=0)
+        # predictions_probas = np.concatenate((predictions_probas, demo_resnet_model.predict(image)), axis=0)
+        # predictions = np.concatenate((predictions, np.round(demo_resnet_model.predict(image))), axis=0)
+        ims.append(image)
+        labs.append(label)
+        probs.append(demo_resnet_model.predict(image))
+        preds.append(np.round(demo_resnet_model.predict(image)))
 
-# plotter_lib.ylabel("Cross Entropy")
+    custom_dict = {'ims': ims, 'labs': labs, 'probs': probs, 'preds': preds}
+    new_dict = {}
+    for key in custom_dict:
 
-# plotter_lib.title("Training and Validation Loss")
+        new_dict[key] = np.concatenate(custom_dict[key], axis=0)
 
-# plotter_lib.xlabel("epoch")
+    my_val = np.sum(abs((new_dict['labs'] - np.round(new_dict['preds']))))
+    ls.append(my_val)
+    n -= 1
 
-# plotter_lib.show()
+ls.index(min(ls))
 
+
+from sklearn.metrics import roc_auc_score, roc_curve, auc
+tflow.data.datasets.from_tensor_slices(val_ds)
+fpr, tpr, thresholds = roc_curve(val_label_final, val_pred_final)
+roc_auc = auc(fpr, tpr)
+
+plt.figure()
+lw = 2
+plt.plot(fpr, tpr, color="darkorange", lw=lw, label="ROC curve (area = %0.2f)" % roc_auc)
+plt.plot([0, 1], [0, 1], color="navy", lw=lw, linestyle="--")
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("Receiver operating characteristic example")
+plt.legend(loc="lower right")
+# save the ROC curve
+plt.show()
+plt.savefig("ROC_curve.png")
+
+
+# Visualize the training and validation accuracy and loss
+
+plotter_lib.figure(figsize=(10, 10))
+
+plotter_lib.subplot(2, 1, 1)
+
+plotter_lib.plot(history.history["accuracy"], label="Training Accuracy")
+
+plotter_lib.plot(history.history["val_accuracy"], label="Validation Accuracy")
+
+plotter_lib.legend(loc="lower right")
+
+plotter_lib.ylabel("Accuracy")
+
+plotter_lib.title("Training and Validation Accuracy")
+
+plotter_lib.subplot(2, 1, 2)
+
+plotter_lib.plot(history.history["loss"], label="Training Loss")
+
+plotter_lib.plot(history.history["val_loss"], label="Validation Loss")
+
+plotter_lib.legend(loc="upper right")
+
+plotter_lib.ylabel("Binary Cross Entropy")
+
+plotter_lib.title("Training and Validation Loss")
+
+plotter_lib.xlabel("epoch")
+
+plotter_lib.show()
+
+
+from sklearn.metrics import classification_report
+cs_report_val = classification_report(val_label_final, val_pred_final.round())
+
+
+
+
+# Training on the entire dataset
+
+
+demo_resnet_model_fin = Sequential()
+IMAGE_SIZE_INT = 256
+IMAGE_SIZE = (256, 256)  # height, width
+pretrained_model_for_demo_fin = tflow.keras.applications.ResNet50(
+    include_top=False,
+    input_shape=(IMAGE_SIZE_INT, IMAGE_SIZE_INT, 3),
+    pooling="avg",
+    weights="imagenet",
+)
+
+for each_layer in pretrained_model_for_demo_fin.layers:
+    each_layer.trainable = False
+
+demo_resnet_model_fin.add(pretrained_model_for_demo_fin)
+
+demo_resnet_model_fin.add(Flatten())
+
+demo_resnet_model_fin.add(Dense(512, activation="relu"))
+
+demo_resnet_model_fin.add(Dense(1, activation="sigmoid"))
+
+demo_resnet_model_fin.compile(
+    optimizer=Adam(learning_rate=0.001),
+    loss="binary_crossentropy",
+    metrics=[
+        "accuracy",
+        "AUC",
+        "Precision",
+        "Recall",
+        "TruePositives",
+        "TrueNegatives",
+        "FalsePositives",
+        "FalseNegatives",
+    ],
+)
+
+train_ds_and_val_ds = train_ds.concatenate(val_ds)
+history2 = demo_resnet_model_fin.fit(
+    train_ds_and_val_ds,
+    epochs=epochs,
+    verbose=1,
+    validation_data=None,
+    shuffle=False,  # For reproducibility
+    # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
+)
 
 # Save the model
 
-# demo_resnet_model.save("demo_resnet_model.h5")
+demo_resnet_model_fin.save("demo_resnet_model_20K.h5")
 
-# demo_resnet_model.save_weights("demo_resnet_model_weights.h5")
+demo_resnet_model_fin.save_weights("demo_resnet_model_weights_20K.h5")
+
+
+# zip the saved models
+import zipfile
+
+with zipfile.ZipFile("demo_resnet_model_20K.zip", "w") as zip:
+    zip.write("demo_resnet_model_20K.h5", compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+    zip.write("demo_resnet_model_weights_20K.h5")
+
+
+
+
+###### End Script Here - Use main.py to run the script ######
+############################################################################################################
+
+
+# Load the model
+
+# demo_resnet_model_fin = tflow.keras.models.load_model("demo_resnet_model.h5")
 
 # predicting on the training set
 prediction_time = time.time()
+
 # train_predictions = demo_resnet_model.predict(train_ds)
-test_ds_pred = demo_resnet_model.predict(test_ds)
+
+test_ds_pred = demo_resnet_model_fin.predict(test_ds)
+
 prediction_time = time.time() - prediction_time
+
 print("Prediction time for test set: {} seconds".format(prediction_time))
-evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
-evaluation
+test_evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
+
+# write test out_evaluation to file
+with open("test_evaluation.txt", "w") as f:
+
+    for key, value in test_evaluation.items():
+
+        f.write("%s:%s
+
+# To do list:
+    # full script
+    # partition to test script
+    # aucs
+    # basic hp tuning
+    # 140K run
+    # model saving
+    # experiment wiht reloading a deactivated shuffle
+
+
+test_ds.labels
+
+
 # processing the predictions
 imgs_arr = []
 labels_arr = []
@@ -454,13 +664,9 @@ plotter_lib.title("ROC curve")
 plotter_lib.show()
 
 
-# from sklearn.metrics import classification_report
-# classification_report(labels_ls, test_ds_pred.round())
+from sklearn.metrics import classification_report
+classification_report(labels_ls, test_ds_pred.round())
 
-
-# Load the model
-
-# demo_resnet_model_saved = tflow.keras.models.load_model("demo_resnet_model.h5")
 
 # Predict on a single image
 
