@@ -60,8 +60,11 @@ AUTOTUNE = tflow.data.AUTOTUNE
 # This lets us know that the folders are in optimal condition
 # For the first few test runs, we will utilize the One1KsetDraft
 
+
+# Sanity check for the image opening
+
 try:
-    Image.open(r"Data/Real/00998.png")
+    Image.open("tenKDataset\Real\Real7998.png")
 
     print("Image opened successfully")
 
@@ -80,14 +83,14 @@ batch_size = 32  # 32 is default recommendation for vision models
 
 # calculate length  of elements in One1ksetDraft
 n_samples = 0
-for each_folder in os.listdir("One1ksetDraft"):
+for each_folder in os.listdir("tenKDataset"):
     print("Folder: {}".format(each_folder))
     print(
         "Number of images: {}".format(
-            len(os.listdir("One1ksetDraft/{}".format(each_folder)))
+            len(os.listdir("tenKDataset/{}".format(each_folder)))
         )
     )
-    n_samples += len(os.listdir("One1ksetDraft/{}".format(each_folder)))
+    n_samples += len(os.listdir("tenKDataset/{}".format(each_folder)))
 
 
 # the ratio for the splits
@@ -99,7 +102,7 @@ val_ratio = 0.3
 # adjustment for tensorflow 2.0
 
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "One1ksetDraft",
+    "tenKDataset",
     label_mode="binary",
     validation_split=val_ratio,
     shuffle=True,
@@ -121,7 +124,7 @@ for img, label in train_ds.take(-1):
     count += 1
     img_gs.append(img.numpy())
     label_gs.append(label.numpy())
-print(f"Number of batches: {count}")
+print(f"Number of batches in Train: {count}")
 
 ### Validating Batches Complete
 
@@ -130,7 +133,7 @@ train_ds.shuffle(count, reshuffle_each_iteration=False)
 
 ### Separating the validation set
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "One1ksetDraft",
+    "tenKDataset",
     validation_split=val_ratio,
     shuffle=True,
     subset="validation",
@@ -155,7 +158,14 @@ for img, label in val_ds.take(-1):
     v_im.append(img.numpy())
     v_lab.append(label.numpy())
 v_lab_broken = np.array([float(label) for batch in v_lab for label in batch])
-print(f"Validation Set Labels: {np.unique(v_lab_broken, return_counts=True)}")
+print(
+    "\n",
+    f"For Team 9 : \n\
+      Validation Set Labels: \n\
+        {np.unique(v_lab_broken, return_counts=True)} \n\
+      Class names are: {train_ds.class_names}",
+)
+
 np.unique(v_lab_broken, return_counts=True)
 
 # check for classes in the test_ds dataset
@@ -166,7 +176,14 @@ for img, label in test_ds.take(-1):
     t_im.append(img.numpy())
     t_lab.append(label.numpy())
 t_lab_broken = np.array([float(label) for batch in t_lab for label in batch])
-print(f"Test Set Labels: {np.unique(t_lab_broken, return_counts=True)}")
+print(
+    "\n",
+    f"For Team 9: \n\
+      Test Set Labels: \n\
+        {np.unique(t_lab_broken, return_counts=True)} \n\
+        Class names are: {train_ds.class_names}",
+)
+
 np.unique(t_lab_broken, return_counts=True)
 
 # check for classes in the train_ds dataset
@@ -177,8 +194,22 @@ for img, label in train_ds.take(-1):
     tr_im.append(img.numpy())
     tr_lab.append(label.numpy())
 tr_lab_broken = np.array([float(label) for batch in tr_lab for label in batch])
-print(f"Train Set Labels: {np.unique(tr_lab_broken, return_counts=True)}")
+print(
+    "\n",
+    f"For Team 9: \n\
+      Train Set Labels: \n\
+        {np.unique(tr_lab_broken, return_counts=True)} \n\
+        Class names are: {train_ds.class_names}",
+)
 np.unique(tr_lab_broken, return_counts=True)
+
+# import python garbage collector
+import gc
+
+del v_im, v_lab, t_im, t_lab, tr_im, tr_lab
+
+gc.collect()
+
 
 print("Num GPUs Available: ", len(tflow.config.list_physical_devices("GPU")))
 print(tflow.config.list_physical_devices("GPU"))
@@ -325,7 +356,6 @@ batch_num = 0
 # MAJOR PROGRESS FOUND HERE
 #### BAD IMAGE ISOLATION ######
 for imagenes, etiquetas, predicciones in combined:
-
     # counter_other += np.sum((etiquetas != np.round((predicciones))))
 
     misclassifieds = etiquetas - np.round((predicciones))
@@ -340,11 +370,9 @@ for imagenes, etiquetas, predicciones in combined:
     for i in misclassifieds:
         print(i)
         if i == 1:
-
             target.append(j)
 
         elif i == -1:
-
             target.append(-j)
 
         j += 1
@@ -369,7 +397,6 @@ erase_images("Misclassifications\Fake", format="png")
 # are true to the batch only
 # Isolations of bad images
 for key, value in bad_classifications.items():
-
     misclassifieds = bad_classifications[
         key
     ]  # tuple of lists of indices of misclassified images
@@ -377,13 +404,11 @@ for key, value in bad_classifications.items():
     for ind in misclassifieds:
         print(ind)
         if ind < 0:
-
             flag = "Fake"
 
             new_ind = abs(ind)
 
         else:
-
             flag = "Real"
             new_ind = ind
 
