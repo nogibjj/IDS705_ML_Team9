@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import warnings
+
 warnings.filterwarnings("ignore")
 from sklearn.neighbors import KNeighborsClassifier
 
