@@ -92,6 +92,7 @@ for tar_file in glob.glob(os.path.join(fake_face_path, "*.tar")):
 
 
 # list all folders in a directory
+non_remove_fake = 0
 for folder in os.listdir(".\TemporaryFiles\Fake"):
     print(folder, "first print")
     if not (os.path.isdir(os.path.join(".\TemporaryFiles\Fake", folder))):
@@ -102,8 +103,12 @@ for folder in os.listdir(".\TemporaryFiles\Fake"):
             Image.open(os.path.join(".\TemporaryFiles\Fake", folder))
         except:
             print("Not an image")
-            os.remove(os.path.join(".\TemporaryFiles\Fake", folder))
 
+            try:
+                os.remove(os.path.join(".\TemporaryFiles\Fake", folder))
+            except:
+                print("Not a file, cannot remove")
+                non_remove_fake += 1
     else:  # if it was a directory, move all images to the main folder
         print("Is a directory")
         for img in glob.glob(os.path.join(".\TemporaryFiles\Fake", folder + "\*.jpg")):
@@ -112,7 +117,7 @@ for folder in os.listdir(".\TemporaryFiles\Fake"):
         # remove folder after moving images
         # print(img, folder)
         os.rmdir(os.path.join(".\TemporaryFiles\Fake", folder))
-
+print(non_remove_fake, "files were not removed from temp Fake")
 ### Fake Faces Extraction Complete ###
 
 
@@ -124,7 +129,7 @@ print("There are", fake_images, "fake images")
 
 # choosing the cap for the image count
 image_cap = min(real_images, fake_images)
-
+print("The image cap is", image_cap)
 ### Resizing and Erasing Images ###
 ### Image Extraction into the Final Datasets ###
 from PIL import Image
@@ -137,8 +142,10 @@ def resize_and_erase_images(
     size: tuple,
     file_format: str,
     cap: int = image_cap,
+    return_failed: bool = False,
 ) -> int:
     """Resize images in input directory and save to output directory"""
+    non_rm_images = []
     file_format_string = "*." + file_format
 
     if "Real" in input_dir:
@@ -148,14 +155,18 @@ def resize_and_erase_images(
 
     iter = 1
     for image in glob.glob(os.path.join(input_dir, file_format_string)):
-        img = Image.open(image)
         try:
+            img = Image.open(image)
             img = img.resize(size)
             img_gray = img.convert("L")
 
         except:
-            print(f"Image at {iter} is not a valid image")
-            os.remove(image)
+            print(f"Image {image} is not a valid image")
+            try:
+                os.remove(image)
+            except:
+                print(f"Image cannot be removed at this {image}")
+                non_rm_images.append(image)
             continue
 
         img.save(os.path.join(output_dir, (flag + str(iter) + ".png")))
@@ -167,6 +178,9 @@ def resize_and_erase_images(
             break
         print(f"Image count is {iter-1} for {flag} images")
     print("Done with " + flag)
+    print(f"Images that could not be removed: {len(non_rm_images)}")
+    if return_failed:
+        return iter - 1, non_rm_images
     return iter - 1
 
 
@@ -176,8 +190,8 @@ im_size = (256, 256)  # Will downscale in model file
 
 cap_imposed_by_real = resize_and_erase_images(
     ".\TemporaryFiles\Real",
-    "tenKDataset\Real",
-    "tenKGrayDataset\Real",
+    "T9-140KRGB\Real",
+    "T9-140KGray\Real",
     size=im_size,
     file_format="png",
     cap=image_cap,
@@ -187,8 +201,8 @@ print(cap_imposed_by_real)
 
 resize_and_erase_images(
     ".\TemporaryFiles\Fake",
-    "tenKDataset\Fake",
-    "tenKGrayDataset\Fake",
+    "T9-140KRGB\Fake",
+    "T9-140KGray\Fake",
     size=im_size,
     file_format="jpg",
     cap=cap_imposed_by_real,
@@ -196,10 +210,15 @@ resize_and_erase_images(
 
 
 # balance the dataset
-real_num = len(os.listdir("tenKDataset\Real"))
-fake_num = len(os.listdir("tenKDataset\Fake"))
+real_num = len(os.listdir("140KRGB\Real"))
+fake_num = len(os.listdir("140KRGB\Fake"))
 print("Final Real Images:", real_num)
 print("Final Fake Images:", fake_num)
+
+
+# preprocessing the proxies
+
+# Mids Colored and Mids Colored Gray
 
 
 ### Balancing the Dataset : Code here if needed ###

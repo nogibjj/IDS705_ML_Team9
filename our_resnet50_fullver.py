@@ -64,6 +64,7 @@ AUTOTUNE = tflow.data.AUTOTUNE
 # Sanity check for the image opening
 
 try:
+    # Using the 10K folder for this case
     Image.open("tenKDataset\Real\Real7998.png")
 
     print("Image opened successfully")
@@ -83,27 +84,14 @@ batch_size = 32  # 32 is default recommendation for vision models
 
 # calculate length  of elements in One1ksetDraft
 n_samples = 0
-for each_folder in os.listdir("tenKDataset"):
+for each_folder in os.listdir("T9-140KRGB"):
     print("Folder: {}".format(each_folder))
     print(
         "Number of images: {}".format(
-            len(os.listdir("tenKDataset/{}".format(each_folder)))
+            len(os.listdir("T9-140KRGB/{}".format(each_folder)))
         )
     )
-    n_samples += len(os.listdir("tenKDataset/{}".format(each_folder)))
-
-# dataset_path = r".\tenKDataset"
-# dataset_path_real = r".\tenKDataset\Real"
-# dataset_path_fake = ".\tenKDataset\Fake"
-
-# for folder in os.listdir(dataset_path):
-#     print(folder)
-#     for img in glob.glob(os.path.join(dataset_path, folder, "*.png")):
-#         print(img)   
-#         shutil.move(img, ".\TemporaryFiles\Real")
-#     # remove folder after moving images
-#     os.rmdir(os.path.join(".\TemporaryFiles\Real", folder))
-
+    n_samples += len(os.listdir("T9-140KRGB/{}".format(each_folder)))
 
 
 # the ratio for the splits
@@ -222,6 +210,36 @@ import gc
 del v_im, v_lab, t_im, t_lab, tr_im, tr_lab
 
 gc.collect()
+
+# saving the images and labels for the train, test and validation sets
+
+
+ims = []
+labs = []
+probs = []
+preds = []
+
+datasets = {"train": train_ds, "test": test_ds, "val": val_ds}
+ds_arrays = {}
+for ds in datasets:
+    ims = []
+    labs = []
+
+    for image, label in datasets[ds]:
+        ims.append(image)
+        labs.append(label)
+
+    ims = np.concatenate(ims, axis=0)
+    labs = np.concatenate(labs, axis=0)
+    print(ims.shape)
+    print(labs.shape)
+
+    ds_arrays[ds] = {"images": ims, "labels": labs}
+
+# save the arrays
+for ds in ds_arrays:
+    np.save(f"140K{ds}_images.npy", ds_arrays[ds]["images"])
+    np.save(f"140K{ds}_labels.npy", ds_arrays[ds]["labels"])
 
 
 print("Num GPUs Available: ", len(tflow.config.list_physical_devices("GPU")))
