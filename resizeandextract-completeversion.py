@@ -29,6 +29,16 @@ def erase_images(output_dir, format):
         os.remove(image)
 
 
+def gray_handler(img, size):
+    """Convert image to grayscale"""
+    imgray = Image.open(img).resize(size).convert("L")
+    imgray = np.array(imgray)
+    imgray = np.repeat(imgray[..., np.newaxis], 3, -1)
+    # convert to image
+    imgray = Image.fromarray(imgray)
+    return imgray
+
+
 ### Cleaning Commences ###
 # Cleaning out the directories
 for folder in os.listdir(".\TemporaryFiles\Real"):
@@ -158,7 +168,7 @@ def resize_and_erase_images(
         try:
             img = Image.open(image)
             img = img.resize(size)
-            img_gray = img.convert("L")
+            img_gray = img_gray = gray_handler(image, size)
 
         except:
             print(f"Image {image} is not a valid image")
