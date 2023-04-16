@@ -11,28 +11,47 @@ from sklearn.model_selection import train_test_split
 fakes = os.listdir("T9-140KRGB/Fake")
 reals = os.listdir("T9-140KRGB/Real")
 all_paths = fakes + reals
+labels_fake = [0] * len(fakes)
+labels_real = [1] * len(reals)
+all_labels = labels_fake + labels_real
 
-mapping_dict = {}
-map_ls = []
-label_ls = []
 
-for i, file in enumerate(all_paths):
-    if "Fake" in file:
-        label = 0
+train_paths, test_paths, train_labels, test_labels = train_test_split(
+    all_paths,
+    all_labels,
+    test_size=0.2,
+    random_state=42,
+    shuffle=True,
+    stratify=all_labels,
+)
+
+train_paths, validation_paths, train_labels, validation_labels = train_test_split(
+    train_paths,
+    train_labels,
+    test_size=0.1,
+    random_state=42,
+    shuffle=True,
+    stratify=train_labels,
+)
+
+# copy the imafges to the new folders
+for files in train_paths:
+    if files in fakes:
+        shutil.copy("T9-140KRGB/Fake/" + files, "T9-Train/Fake")
     else:
-        label = 1
-    mapping_dict[i] = file
-    map_ls.append(i)
-    label_ls.append(label)
+        shutil.copy("T9-140KRGB/Real/" + files, "T9-Train/Real")
 
+for files in test_paths:
+    if files in fakes:
+        shutil.copy("T9-140KRGB/Fake/" + files, "T9-Test/Fake")
+    else:
+        shutil.copy("T9-140KRGB/Real/" + files, "T9-Test/Real")
 
-map_ls_arr = np.array(map_ls)
-label_ls_arr = np.array(label_ls)
-
-train_keys, test_keys = train_test_split(
-
-
-
+for files in validation_paths:
+    if files in fakes:
+        shutil.copy("T9-140KRGB/Fake/" + files, "T9-Val/Fake")
+    else:
+        shutil.copy("T9-140KRGB/Real/" + files, "T9-Val/Real")
 
 # fake_ratio = len(fakes)/len(all_paths)
 # real_ratio = len(reals)/len(all_paths)
@@ -40,18 +59,6 @@ train_keys, test_keys = train_test_split(
 # test_ratio = 0.2 * len(all_paths)
 # validation_ratio = 0.1 * len(all_paths)
 # train_ratio = 0.7 * len(all_paths)
-
-
-
-
-
-for files in fakes:
-    if random.random() < 0.2:
-        shutil.move("T9-140KRGB/Fake/" + files, "T9-140KRGB/Test/Fake")
-    elif random.random() < 0.2:
-        shutil.move("T9-140KRGB/Fake/" + files, "T9-140KRGB/Validation/Fake")
-    else:
-        shutil.move("T9-140KRGB/Fake/" + files, "T9-140KRGB/Train/Fake")
 
 
 # list all folders in a directory

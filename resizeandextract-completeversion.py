@@ -210,8 +210,8 @@ resize_and_erase_images(
 
 
 # balance the dataset
-real_num = len(os.listdir("140KRGB\Real"))
-fake_num = len(os.listdir("140KRGB\Fake"))
+real_num = len(os.listdir("T9-140KRGB\Real"))
+fake_num = len(os.listdir("T9-140KRGB\Fake"))
 print("Final Real Images:", real_num)
 print("Final Fake Images:", fake_num)
 

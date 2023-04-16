@@ -43,6 +43,8 @@ from tensorflow.keras.optimizers import Adam
 
 import time
 
+import gc
+
 from PIL import Image
 
 # Timing the script
@@ -94,20 +96,20 @@ for each_folder in os.listdir("T9-140KRGB"):
     n_samples += len(os.listdir("T9-140KRGB/{}".format(each_folder)))
 
 
-# the ratio for the splits
-train_ratio = 0.7
-val_ratio = 0.3
+# # the ratio for the splits
+# train_ratio = 0.7
+# val_ratio = 0.3
 
 
 # Create the dataset
 # adjustment for tensorflow 2.0
 
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "tenKDataset",
+    "T9-Train",
     label_mode="binary",
-    validation_split=val_ratio,
+    # validation_split=val_ratio,
     shuffle=True,
-    subset="training",
+    # subset="training",
     seed=417,
     image_size=IMAGE_SIZE,
     batch_size=batch_size,  # Changed from batch_size 32 to none
@@ -127,17 +129,21 @@ for img, label in train_ds.take(-1):
     label_gs.append(label.numpy())
 print(f"Number of batches in Train: {count}")
 
+
+
+
 ### Validating Batches Complete
 
 ### Enhancing reproducibility
 train_ds.shuffle(count, reshuffle_each_iteration=False)
-
+del count, img_gs, label_gs
+gc.collect()
 ### Separating the validation set
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "tenKDataset",
-    validation_split=val_ratio,
+    "T9-Val",
+    # validation_split=val_ratio,
     shuffle=True,
-    subset="validation",
+    # subset="validation",
     seed=417,
     label_mode="binary",
     image_size=IMAGE_SIZE,
@@ -146,16 +152,16 @@ validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
 )
 
 
-# for the test split
-val_batches = tflow.data.experimental.cardinality(validation_ds)
-test_ds = validation_ds.take((2 * val_batches) // 3)
-val_ds = validation_ds.skip((2 * val_batches) // 3)
+# # for the test split
+# val_batches = tflow.data.experimental.cardinality(validation_ds)
+# test_ds = validation_ds.take((2 * val_batches) // 3)
+# val_ds = validation_ds.skip((2 * val_batches) // 3)
 
 # check for classes in the dataset
 # class_names = validation_ds.class_names
 v_im = []
 v_lab = []
-for img, label in val_ds.take(-1):
+for img, label in validation_ds.take(-1):
     v_im.append(img.numpy())
     v_lab.append(label.numpy())
 v_lab_broken = np.array([float(label) for batch in v_lab for label in batch])
@@ -164,13 +170,28 @@ print(
     f"For Team 9 : \n\
       Validation Set Labels: \n\
         {np.unique(v_lab_broken, return_counts=True)} \n\
-      Class names are: {train_ds.class_names}",
+      Class names are: {validation_ds.class_names}",
 )
-
-np.unique(v_lab_broken, return_counts=True)
+v_lab_string = np.unique(v_lab_broken, return_counts=True)
+v_lab_class = validation_ds.class_names
+del v_im, v_lab, v_lab_broken
+gc.collect()
 
 # check for classes in the test_ds dataset
 # class_names = validation_ds.class_names
+
+# test dataset
+test_ds = tflow.keras.preprocessing.image_dataset_from_directory(
+    "T9-Test",
+    label_mode="binary",
+    shuffle=True,
+    seed=417,
+    image_size=IMAGE_SIZE,
+    batch_size=batch_size,  # Changed from batch_size 32 to none
+    # color_mode="grayscale",
+)
+
+# check for classes in the dataset
 t_im = []
 t_lab = []
 for img, label in test_ds.take(-1):
@@ -182,10 +203,14 @@ print(
     f"For Team 9: \n\
       Test Set Labels: \n\
         {np.unique(t_lab_broken, return_counts=True)} \n\
-        Class names are: {train_ds.class_names}",
+        Class names are: {test_ds.class_names}",
 )
 
-np.unique(t_lab_broken, return_counts=True)
+test_string =  np.unique(t_lab_broken, return_counts=True)
+test_classes = test_ds.class_names
+del t_im, t_lab, t_lab_broken
+gc.collect()
+
 
 # check for classes in the train_ds dataset
 # class_names = validation_ds.class_names
@@ -202,13 +227,9 @@ print(
         {np.unique(tr_lab_broken, return_counts=True)} \n\
         Class names are: {train_ds.class_names}",
 )
-np.unique(tr_lab_broken, return_counts=True)
-
-# import python garbage collector
-import gc
-
-del v_im, v_lab, t_im, t_lab, tr_im, tr_lab
-
+train_string =  np.unique(tr_lab_broken, return_counts=True)
+train_classes = train_ds.class_names
+del tr_im, tr_lab, tr_lab_broken
 gc.collect()
 
 # saving the images and labels for the train, test and validation sets
@@ -219,7 +240,7 @@ labs = []
 probs = []
 preds = []
 
-datasets = {"train": train_ds, "test": test_ds, "val": val_ds}
+datasets = {"train": train_ds, "test": test_ds, "val": validation_ds}
 ds_arrays = {}
 for ds in datasets:
     ims = []
@@ -235,12 +256,15 @@ for ds in datasets:
     print(labs.shape)
 
     ds_arrays[ds] = {"images": ims, "labels": labs}
-
+del ims, labs
+gc.collect()
 # save the arrays
 for ds in ds_arrays:
     np.save(f"140K{ds}_images.npy", ds_arrays[ds]["images"])
     np.save(f"140K{ds}_labels.npy", ds_arrays[ds]["labels"])
 
+del ds_arrays
+gc.collect()
 
 print("Num GPUs Available: ", len(tflow.config.list_physical_devices("GPU")))
 print(tflow.config.list_physical_devices("GPU"))
@@ -307,7 +331,7 @@ demo_resnet_model.compile(
 
 history = demo_resnet_model.fit(
     train_ds,
-    validation_data=val_ds,
+    validation_data=validation_ds,
     epochs=epochs,
     verbose=1,
     shuffle=False,  # For reproducibility
@@ -502,6 +526,7 @@ history2 = demo_resnet_model_fin.fit(
 )
 
 # Save the model
+final_hp = demo_resnet_model_fin.get_config()
 
 demo_resnet_model_fin.save("demo_resnet_model_20K.h5")
 
