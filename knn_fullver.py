@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import warnings
+
 warnings.filterwarnings("ignore")
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -46,18 +47,70 @@ knn = KNeighborsClassifier(n_neighbors=3)
 # Fit the classifier to the training data
 knn.fit(train_features_2d, train_labels)
 
-# Make predictions on the validation data
-val_predictions = knn.predict(val_features_2d)
+
+# Create a predefined train/test split for RandomSearchCV (to be used later)
+X_train_plus_val = np.concatenate((train_features_2d, val_features_2d), axis=0)
+y_train_plus_val = np.concatenate((train_labels, val_labels), axis=0)
+
+from sklearn.model_selection import PredefinedSplit
+
+validation_fold = np.concatenate(
+    (-1 * np.ones(len(train_labels)), np.zeros(len(val_labels)))
+)
+train_val_split = PredefinedSplit(validation_fold)
+
+# Run RandomizedSearchCV to find the best hyperparameters
+from sklearn.model_selection import RandomizedSearchCV
+
+# define models and parameters
+model_2 = KNeighborsClassifier()
+n_neighbors = range(1, 5)
+
+param_dist_2 = {"n_neighbors": n_neighbors}
+
+# define random search
+n_iter_search_2 = 20
+random_search_2 = RandomizedSearchCV(
+    model_2,
+    param_distributions=param_dist_2,
+    n_iter=n_iter_search_2,
+    cv=train_val_split,
+    random_state=10,
+)
+
+from signal import signal, SIGPIPE, SIG_DFL
+import time
+
+signal(SIGPIPE, SIG_DFL)
+
+start = time.time()
+random_search_2.fit(X_train_plus_val, y_train_plus_val)
+print(
+    "RandomizedSearchCV took %.2f seconds for %d candidates parameter settings."
+    % ((time.time() - start), n_iter_search_2)
+)
+
+# save value of best k
+best_k = random_search_2.best_params_["n_neighbors"]
+
+
+# Run KNN with best k with complete training and validation data
+knn = KNeighborsClassifier(n_neighbors=best_k)
+knn.fit(X_train_plus_val, y_train_plus_val)
+
+# Make predictions on the test data
+test_predictions = knn.predict(test_features_2d)
 
 # Calculate the accuracy of the predictions
-accuracy = np.mean(val_predictions == val_labels)
-print("Validation Accuracy: ", accuracy)
+accuracy = np.mean(test_predictions == test_labels)
+print("Test Accuracy: ", accuracy)
 
-# Create ROC curve
+# ROC curve
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
 
-fpr, tpr, thresholds = roc_curve(val_labels, val_predictions)
+fpr, tpr, thresholds = roc_curve(test_labels, test_predictions)
+
 roc_auc = auc(fpr, tpr)
 
 plt.figure()
@@ -70,6 +123,6 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
-plt.title("Receiver operating characteristic")
+plt.title("ROC Curve")
 plt.legend(loc="lower right")
 plt.show()
