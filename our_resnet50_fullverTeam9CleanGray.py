@@ -82,7 +82,7 @@ except:
 # Set up the image size, this is the default for ResNet50
 IMAGE_SIZE = (256, 256)  # height, width
 # Might change to 128
-batch_size = 64  # 32 is default recommendation for vision models
+batch_size = 128  # 32 is default recommendation for vision models
 
 
 # calculate length  of elements in One1ksetDraft
