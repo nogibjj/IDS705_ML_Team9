@@ -1,4 +1,4 @@
-"""Resnet model for classification of real and fake images."""
+"""Resnet model for classification of real and fake images. - Gray Version"""
 
 import os
 
@@ -66,7 +66,7 @@ batch_size = 128  # 32 is default recommendation for vision models
 
 
 train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "T9-Train",
+    "T9-GrayTrain",
     label_mode="binary",
     # validation_split=val_ratio,
     shuffle=True,
@@ -78,7 +78,7 @@ train_ds = tflow.keras.preprocessing.image_dataset_from_directory(
 )
 
 validation_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "T9-Val",
+    "T9-GrayVal",
     # validation_split=val_ratio,
     shuffle=True,
     # subset="validation",
@@ -111,7 +111,7 @@ gc.collect()
 
 # test dataset
 test_ds = tflow.keras.preprocessing.image_dataset_from_directory(
-    "T9-Test",
+    "T9-GrayTest",
     label_mode="binary",
     shuffle=True,
     seed=417,
@@ -128,7 +128,7 @@ epochs = 10
 
 # Load the model
 
-demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K.h5")
+demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140KGray.h5")
 demo_resnet_model.summary()
 demo_resnet_model.get_config()
 demo_resnet_model.get_weights()
@@ -190,7 +190,7 @@ for im, lab in im_labels:
     reconstructed_image = Image.fromarray((im * 1).astype(np.uint8)).convert("RGB")
 
     # use old ind for naming
-    reconstructed_image.save(f"T9-Misc140KRGB\{flag}\{flag}{iter_for_name}.png")
+    reconstructed_image.save(f"T9-Misc140KGray\{flag}\{flag}{iter_for_name}.png")
     iter_for_name += 1
 
 
@@ -204,12 +204,12 @@ from sklearn.metrics import confusion_matrix, classification_report
 print(classification_report(labs, preds))
 print(confusion_matrix(labs, preds))
 # write classification report to file
-with open("test_classification_report.txt", "w") as f:
+with open("Graytest_classification_report.txt", "w") as f:
     f.write(str(classification_report(labs, preds)))
     f.close()
 
 # write confusion matrix to file
-with open("test_confusion_matrix.txt", "w") as f:
+with open("Graytest_confusion_matrix.txt", "w") as f:
     f.write(str(confusion_matrix(labs, preds)))
     f.close()
 
@@ -217,7 +217,7 @@ with open("test_confusion_matrix.txt", "w") as f:
 evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
 print(evaluation)
 # write evaluation to file
-with open("test_evaluation.txt", "w") as f:
+with open("Graytest_evaluation.txt", "w") as f:
     f.write(str(evaluation))
     f.write(str(test_ds.class_names))
     f.close()
@@ -248,7 +248,7 @@ def roc_curve_T9(labels_ls, test_ds_pred):
     plotter_lib.xlabel("False Positive Rate")
     plotter_lib.ylabel("True Positive rate")
     plotter_lib.legend(loc="best")
-    plotter_lib.title("ROC Curve on Test Set")
+    plotter_lib.title("ROC Curve on Test Set - GrayScale")
     plotter_lib.show()
 
 
@@ -270,15 +270,15 @@ def pr_curve_T9(labels_ls, test_ds_pred):
     # axis labels
     plotter_lib.xlabel("Recall")
     plotter_lib.ylabel("Precision")
-    plotter_lib.title("Precision-Recall Curve on Test Set")
+    plotter_lib.title("Precision-Recall Curve on Test Set - GrayScale")
     plotter_lib.legend()
     plotter_lib.show()
 
 
 pr_curve_T9(labs, probs)
 
-demo_resnet_model.save("demo_resnet_model_140K_tr_val_rgb.h5")
-demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
+demo_resnet_model.save("demo_resnet_model_140K_tr_val_gray.h5")
+demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_gray_weights.h5")
 
 
 # Final Step : Train on all data and save model
@@ -304,8 +304,8 @@ final_history = demo_resnet_model.fit(
 
 # save the final model because Team 9 is the best!!!!
 
-demo_resnet_model.save("deploy_resnet_model_140K_alldata_rgb.h5")
-demo_resnet_model.save_weights("deploy_resnet_model_140K_alldata_rgb_weights.h5")
+demo_resnet_model.save("deploy_resnet_model_140K_alldata_gray.h5")
+demo_resnet_model.save_weights("deploy_resnet_model_140K_alldata_gray_weights.h5")
 
 
 ####################
