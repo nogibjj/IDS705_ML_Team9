@@ -25,13 +25,25 @@ def pr_curve_T9(labels_ls, test_ds_pred):
     # calculate model precision-recall curve
     precision, recall, _ = precision_recall_curve(labels_ls, test_ds_pred)
     # plot the precision-recall curves
-    plotter_lib.plot([0, 1], [fake, fake], linestyle="--", label="No Skill")
+    plotter_lib.plot([0, 1], [fake, fake], linestyle="--", label="Random Chance")
     plotter_lib.plot(recall, precision, marker=".", label="ResNet50")
     # axis labels
     plotter_lib.xlabel("Recall")
     plotter_lib.ylabel("Precision")
     plotter_lib.legend()
     plotter_lib.show()
+    
+    
+def auc(labels_ls, test_ds_pred):
+    # calculate the no skill line as the proportion of the positive class
+    fake = len(labels_ls[labels_ls==1]) / len(labels_ls)
+    # calculate model precision-recall curve
+    precision, recall, _ = precision_recall_curve(labels_ls, test_ds_pred)
+    # add random chance line
+    plotter_lib.plot([0, 1], [fake, fake], linestyle='--', label='Random Chance')
+    # calculate AUC
+    auc = auc(recall, precision)
+    print('AUC: %.3f' % auc)
 
 
 if __name__ == "__main__":
