@@ -158,6 +158,8 @@ demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 # demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K_tr_val_rgb.h5")
 # demo_resnet_model = tflow.keras.models.load_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
+# below code works for the dataset
+# because it is neither concatenated nor type changed
 ims = []
 labs = []
 probs = []
@@ -224,6 +226,7 @@ with open("test_evaluation.txt", "w") as f:
 
 import matplotlib.pyplot as plotter_lib
 from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import average_precision_score
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 import numpy as np
@@ -252,54 +255,62 @@ def roc_curve_T9(labels_ls, test_ds_pred):
 roc_curve_T9(labs, probs)
 
 
-from sklearn.metrics import roc_auc_score, roc_curve
+def pr_curve_T9(labels_ls, test_ds_pred):
+    # calculate the no skill line as the proportion of the positive class
+    no_skill = len(labels_ls[labels_ls == 1]) / len(labels_ls)
+    # calculate model precision-recall curve
+    precision, recall, _ = precision_recall_curve(labels_ls, test_ds_pred)
+    # average precision score
+    ap = average_precision_score(labels_ls, test_ds_pred)
+    # plot the precision-recall curves
+    plotter_lib.plot(
+        [0, 1], [no_skill, no_skill], linestyle="--", label="Random Chance"
+    )
+    plotter_lib.plot(recall, precision, label="ResNet50 (AP = %.4f)" % ap)
+    # axis labels
+    plotter_lib.xlabel("Recall")
+    plotter_lib.ylabel("Precision")
+    plotter_lib.title("Precision-Recall Curve on Test Set")
+    plotter_lib.legend()
+    plotter_lib.show()
 
-fpr, tpr, thresholds = roc_curve(labs, preds)
-roc_auc = roc_auc_score(fpr, tpr)
+
+pr_curve_T9(labs, probs)
+
+demo_resnet_model.save("demo_resnet_model_140K_tr_val_rgb.h5")
+demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
 
-plt.figure()
-lw = 2
-plt.plot(
-    fpr, tpr, color="darkorange", lw=lw, label="ROC curve (area = %0.2f)" % roc_auc
+# Final Step : Train on all data and save model
+
+all_ds = train_ds_and_val_ds.concatenate(test_ds)
+# validating the number of images in the dataset
+count = 0
+for im, label in all_ds.take(-1):
+    count += im.shape[0]
+
+print("The images in the dataset with all the data are: ", count)
+
+# Train on all data
+
+final_history = demo_resnet_model.fit(
+    all_ds,
+    # validation_data=validation_ds,
+    epochs=epochs,
+    verbose=1,
+    shuffle=False,  # For reproducibility
+    # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
 )
-plt.plot([0, 1], [0, 1], color="navy", lw=lw, linestyle="--", label="Random Guessing")
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel("False Positive Rate")
-plt.ylabel("True Positive Rate")
-plt.title("Receiver Operating Characteristic")
-plt.legend(loc="lower right")
-# save the ROC curve
-plt.savefig("TestROC_curve.png")
-plt.savefig("TestROC_curve.pdf")
-plt.savefig("TestROC_curveTight.png", bbox_inches="tight", dpi=300)
-plt.show()
 
-### TEAM 9 ###
-#
-# INSERT PR CURVES HERE
-#
-### TEAM 9 ###
+# save the final model because Team 9 is the best!!!!
+
+demo_resnet_model.save("deploy_resnet_model_140K_alldata_rgb.h5")
+demo_resnet_model.save_weights("deploy_resnet_model_140K_alldata_rgb_weights.h5")
 
 
-from sklearn.metrics import classification_report
-
-cs_report_val = classification_report(labs, preds)
-
-print(cs_report_val)
-
-
-# predicting on the test
-
-test_evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
-
-# write test out_evaluation to file
-with open("test_evaluation.txt", "w") as f:
-    for key, value in test_evaluation.items():
-        f.write("%s:%s" % (key, value))
-
-    f.close()
+####################
+# Proxy work is left to another script
+####################
 
 
 # Proxy : AI generated images

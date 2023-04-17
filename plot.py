@@ -10,14 +10,16 @@ def roc_curve_T9(labels_ls, test_ds_pred):
     # test_ds_pred_rounded = np.round(test_ds_pred_other_class)
     # np.sum(test_ds_pred_rounded == labels_ls) / len(labels_ls)
     fpr, tpr, thresh = roc_curve(labels_ls, test_ds_pred)
+    print("FPR OK")
     auc_score = auc(fpr, tpr)
+    print("AUC OK")
     # plot roc curve
     plotter_lib.plot(
         fpr,
         tpr,
         linestyle="--",
         color="orange",
-        label=f"ResNet50 (AUC = {auc_score:.3f})",
+        label=f"ResNet50 (AUC = {auc_score:.2f})",
     )
     # axis labels
     plotter_lib.xlabel("False Positive Rate")
@@ -42,12 +44,14 @@ def pr_curve_T9(labels_ls, test_ds_pred):
     plotter_lib.show()
 
 
-def auc(labels_ls, test_ds_pred):
+def auc_T9(labels_ls, test_ds_pred):
     # calculate the no skill line as the proportion of the positive class
     fake = len(labels_ls[labels_ls == 1]) / len(labels_ls)
     # calculate model precision-recall curve
+    print("Is this the error?")
     precision, recall, _ = precision_recall_curve(labels_ls, test_ds_pred)
     # add random chance line
+    print("Is this the error?")
     plotter_lib.plot([0, 1], [fake, fake], linestyle="--", label="Random Chance")
     # calculate AUC
     auc = auc(recall, precision)
