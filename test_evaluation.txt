@@ -1,0 +1,1 @@
+{'loss': 0.15392383933067322, 'accuracy': 0.9538928866386414, 'auc': 0.9876847267150879, 'precision': 0.9395448565483093, 'recall': 0.970214307308197, 'true_positives': 13583.0, 'true_negatives': 13126.0, 'false_positives': 874.0, 'false_negatives': 417.0}['Fake', 'Real']

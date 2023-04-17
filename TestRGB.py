@@ -59,16 +59,6 @@ tflow.debugging.set_log_device_placement(True)
 AUTOTUNE = tflow.data.AUTOTUNE
 
 
-# Set up the GPU
-gpus = tflow.config.experimental.list_physical_devices("GPU")
-if gpus:
-    try:
-        tflow.config.experimental.set_visible_devices(gpus[0], "GPU")
-        tflow.config.experimental.set_memory_growth(gpus[0], True)
-    except RuntimeError as e:
-        print(e)
-
-
 # Set up the image size, this is the default for ResNet50
 IMAGE_SIZE = (256, 256)  # height, width
 
@@ -138,8 +128,14 @@ epochs = 10
 
 # Load the model
 
-demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model.h5")
-
+demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K.h5")
+demo_resnet_model.summary()
+demo_resnet_model.get_config()
+demo_resnet_model.get_weights()
+demo_resnet_model.optimizer
+demo_resnet_model.loss
+demo_resnet_model.metrics
+# Our model has been validated
 
 history = demo_resnet_model.fit(
     train_ds_and_val_ds,
@@ -149,7 +145,18 @@ history = demo_resnet_model.fit(
     shuffle=False,  # For reproducibility
     # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
 )
+# Agreed, GPU was the only option for this model
+# This is 30 minutes on a 10 epoch run
+# Approximately 28K images in Test set
 
+# Saving the model fitted on the train and validation set
+
+demo_resnet_model.save("demo_resnet_model_140K_tr_val_rgb.h5")
+demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
+
+# checkpoint
+# demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K_tr_val_rgb.h5")
+# demo_resnet_model = tflow.keras.models.load_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
 ims = []
 labs = []
@@ -171,9 +178,8 @@ misclassifieds = np.where(labs != preds)[0]
 misc_ims = ims[misclassifieds]
 misc_labs = labs[misclassifieds]
 im_labels = zip(misc_ims, misc_labs)
-
+iter_for_name = 0
 for im, lab in im_labels:
-
     if lab == 0:
         flag = "Fake"
     else:
@@ -182,10 +188,68 @@ for im, lab in im_labels:
     reconstructed_image = Image.fromarray((im * 1).astype(np.uint8)).convert("RGB")
 
     # use old ind for naming
-    reconstructed_image.save(f"T9-MisclassificationsAllRGB\{flag}\{flag}{ind+1}.png")
+    reconstructed_image.save(f"T9-Misc140KRGB\{flag}\{flag}{iter_for_name}.png")
+    iter_for_name += 1
 
 
-print(f"Number of misclassified images in the test set: {my_misclassifieds}")
+print(f"Number of misclassified images in the test set: {len(misc_labs)}")
+
+
+### Add normal Evaluation code here ###
+
+from sklearn.metrics import confusion_matrix, classification_report
+
+print(classification_report(labs, preds))
+print(confusion_matrix(labs, preds))
+# write classification report to file
+with open("test_classification_report.txt", "w") as f:
+    f.write(str(classification_report(labs, preds)))
+    f.close()
+
+# write confusion matrix to file
+with open("test_confusion_matrix.txt", "w") as f:
+    f.write(str(confusion_matrix(labs, preds)))
+    f.close()
+
+
+evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=True)
+print(evaluation)
+# write evaluation to file
+with open("test_evaluation.txt", "w") as f:
+    f.write(str(evaluation))
+    f.write(str(test_ds.class_names))
+    f.close()
+
+### Add PR and ROC code here ###
+
+import matplotlib.pyplot as plotter_lib
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import roc_curve
+from sklearn.metrics import auc
+import numpy as np
+
+
+def roc_curve_T9(labels_ls, test_ds_pred):
+    fpr, tpr, _ = roc_curve(labels_ls, test_ds_pred)
+    auc_score = auc(fpr, tpr)
+    # plot roc curve
+    plotter_lib.plot(
+        fpr,
+        tpr,
+        color="orange",
+        label=f"ResNet50 (AUC = {auc_score:.4f})",
+    )
+    # axis labels
+    # add random guessing line
+    plotter_lib.plot([0, 1], [0, 1], color="darkblue", linestyle="--")
+    plotter_lib.xlabel("False Positive Rate")
+    plotter_lib.ylabel("True Positive rate")
+    plotter_lib.legend(loc="best")
+    plotter_lib.title("ROC Curve on Test Set")
+    plotter_lib.show()
+
+
+roc_curve_T9(labs, probs)
 
 
 from sklearn.metrics import roc_auc_score, roc_curve
@@ -232,9 +296,7 @@ test_evaluation = demo_resnet_model.evaluate(test_ds, verbose=1, return_dict=Tru
 
 # write test out_evaluation to file
 with open("test_evaluation.txt", "w") as f:
-
     for key, value in test_evaluation.items():
-
         f.write("%s:%s" % (key, value))
 
     f.close()
@@ -246,7 +308,6 @@ with open("test_evaluation.txt", "w") as f:
 for image in os.listdir(
     r"C:\Users\Eric\Downloads\MLprojectamd\very_real_ai-faces-20230415T234824Z-001\very_real_ai-faces"
 ):
-
     img = tflow.keras.preprocessing.image.load_img(
         r"C:\Users\Eric\Downloads\MLprojectamd\very_real_ai-faces-20230415T234824Z-001\very_real_ai-faces\{}".format(
             image
@@ -282,7 +343,6 @@ for image in os.listdir(
 for image in os.listdir(
     r"C:\Users\Eric\Downloads\MLprojectamd\MIDS24-20230415T234818Z-001\MIDS24"
 ):
-
     img = tflow.keras.preprocessing.image.load_img(
         r"C:\Users\Eric\Downloads\MLprojectamd\MIDS24-20230415T234818Z-001\MIDS24\{}".format(
             image
