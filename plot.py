@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plotter_lib
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import roc_curve
+import numpy as np
+
 def pr_curve(labels_ls, test_ds_pred):
     test_ds_pred_other_class = 1 - test_ds_pred
     test_ds_pred_rounded = np.round(test_ds_pred_other_class)
