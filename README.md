@@ -1,5 +1,9 @@
 # IDS705_ML_Team9: Classification of Fake and Real Faces And Its Implications for Dating Apps
 
+## Team Members:
+Kashaf Ali,Beibei Du,Eric Rios Soderman [in alphabetical order by last name]
+
+
 ## Motivation
 The problem of fake profiles on Dating Apps such as Tinder and Bumble is a serious issue that can deceive and scam users. The use of AI-generated photos to create fake profiles is a growing concern, with some individuals using them innocently due to disinterest or shyness, while others have malicious intentions. 
 <img width="833" alt="Screen Shot 2023-04-19 at 8 35 40 PM" src="https://user-images.githubusercontent.com/60382493/233227857-b1f923dd-8d57-41db-a268-92dd7abe9fe7.png">
