@@ -155,7 +155,9 @@ demo_resnet_model.save("demo_resnet_model_140K_tr_val_rgb.h5")
 demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
 # checkpoint
-# demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K_tr_val_rgb.h5")
+demo_resnet_model = tflow.keras.models.load_model(
+    "demo_resnet_model_140K_tr_val_gray.h5"
+)
 # demo_resnet_model = tflow.keras.models.load_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
 # below code works for the dataset
@@ -279,7 +281,9 @@ pr_curve_T9(labs, probs)
 
 demo_resnet_model.save("demo_resnet_model_140K_tr_val_gray.h5")
 demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_gray_weights.h5")
+from sklearn.metrics import f1_score
 
+f1_score(labs, preds)
 
 # Final Step : Train on all data and save model
 
