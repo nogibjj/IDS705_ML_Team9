@@ -120,6 +120,23 @@ test_ds = tflow.keras.preprocessing.image_dataset_from_directory(
     # color_mode="grayscale",
 )
 
+def class_dist(ds, name):
+    """Returns a dictionary of class distribution."""
+    t_im = []
+    t_lab = []
+    for img, label in ds.take(-1):
+        t_im.append(img.numpy())
+        t_lab.append(label.numpy())
+    t_lab_broken = np.array([float(label) for batch in t_lab for label in batch])
+    print(
+        "\n",
+        f"For Team 9: \n\
+        {name} Set Labels: \n\
+            {np.unique(t_lab_broken, return_counts=True)} \n\
+            Class names are: {ds.class_names}")
+
+    return ds.class_names
+
 epochs = 10
 
 
@@ -154,6 +171,7 @@ history = demo_resnet_model.fit(
 demo_resnet_model.save("demo_resnet_model_140K_tr_val_rgb.h5")
 demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
+demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K_tr_val_rgb.h5")
 # checkpoint
 # demo_resnet_model = tflow.keras.models.load_model("demo_resnet_model_140K_tr_val_rgb.h5")
 # demo_resnet_model = tflow.keras.models.load_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
@@ -228,6 +246,7 @@ import matplotlib.pyplot as plotter_lib
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import roc_curve
+from sklearn.metrics import f1_score
 from sklearn.metrics import auc
 import numpy as np
 
@@ -280,6 +299,7 @@ pr_curve_T9(labs, probs)
 demo_resnet_model.save("demo_resnet_model_140K_tr_val_rgb.h5")
 demo_resnet_model.save_weights("demo_resnet_model_140K_tr_val_rgb_weights.h5")
 
+f1_score(labs, preds)
 
 # Final Step : Train on all data and save model
 
@@ -299,7 +319,7 @@ final_history = demo_resnet_model.fit(
     epochs=epochs,
     verbose=1,
     shuffle=False,  # For reproducibility
-    # callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
+    callbacks=[tflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)],
 )
 
 # save the final model because Team 9 is the best!!!!
@@ -316,11 +336,13 @@ demo_resnet_model.save_weights("deploy_resnet_model_140K_alldata_rgb_weights.h5"
 # Proxy : AI generated images
 
 
-for image in os.listdir(
-    r"C:\Users\Eric\Downloads\MLprojectamd\very_real_ai-faces-20230415T234824Z-001\very_real_ai-faces"
-):
+demo_resnet_model_proxy = tflow.keras.models.load_model("deploy_resnet_model_140K_alldata_rgb.h5")
+
+
+
+for image in os.listdir(r"Data\Application\very_real_ai-faces\very_real_ai-faces"):
     img = tflow.keras.preprocessing.image.load_img(
-        r"C:\Users\Eric\Downloads\MLprojectamd\very_real_ai-faces-20230415T234824Z-001\very_real_ai-faces\{}".format(
+        r"Data\Application\very_real_ai-faces\very_real_ai-faces\{}".format(
             image
         ),
         target_size=(256, 256),
@@ -361,6 +383,7 @@ for image in os.listdir(
         target_size=(256, 256),
     )
     img_array = tflow.keras.preprocessing.image.img_to_array(img)
+
     prediction_proxy = demo_resnet_model.predict(img_array)
     label = np.round(prediction_proxy)
     if label == 0:

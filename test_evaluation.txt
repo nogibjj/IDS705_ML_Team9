@@ -1,1 +1,1 @@
-{'loss': 0.15392383933067322, 'accuracy': 0.9538928866386414, 'auc': 0.9876847267150879, 'precision': 0.9395448565483093, 'recall': 0.970214307308197, 'true_positives': 13583.0, 'true_negatives': 13126.0, 'false_positives': 874.0, 'false_negatives': 417.0}['Fake', 'Real']
+{'loss': 0.17230017483234406, 'accuracy': 0.9468214511871338, 'auc': 0.985694169998169, 'precision': 0.9310867786407471, 'recall': 0.965071439743042, 'true_positives': 13511.0, 'true_negatives': 13000.0, 'false_positives': 1000.0, 'false_negatives': 489.0}['Fake', 'Real']
