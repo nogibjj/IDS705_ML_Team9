@@ -40,9 +40,9 @@ prediction = DeepFace.analyze(color_img)
 pathing_all_sets = ['T9-Val', 'T9-Test', 'T9-Train']
 subset_dn = dict()
 bad_files = dict()
-categories = ["Real", "Fake"]
 
-checkpoint = True
+
+checkpoint = False
 cp_counter = 0
 
 if checkpoint:
@@ -62,18 +62,18 @@ for folder in pathing_all_sets: # All sets
     gender_subset = dict({"Real" : dict(), "Fake" : dict()})
     bad_images = dict({"Real" : [], "Fake" : []})
     bad_count_dn = dict({"Real Count" : 0, "Fake Count" : 0})
+    categories = ["Real", "Fake"]
     
     if checkpoint and folder == dns_backup["last folder"]:
         race_subset = dns_backup["race subset"].copy()
         gender_subset = dns_backup["gender subset"].copy()
         bad_images = dns_backup["bad images"].copy()
         bad_count_dn = dns_backup["bad count"].copy()
+        
+        if dns_backup["last category"] == "Fake":
+            categories = ["Fake"] # to avoid duplicate runs
 
     for category in categories: # Real and Fake
-
-        if checkpoint and folder == dns_backup["last folder"]:
-
-            category = dns_backup["last category"]
         
         new_path = os.path.join(r"C:\Users\Eric-DQGM\Downloads\MLProject\IDS705_ML_Team9", folder, category)
         
@@ -81,7 +81,7 @@ for folder in pathing_all_sets: # All sets
 
         if checkpoint and folder == dns_backup["last folder"]:
 
-            all_images = all_images[(all_images.index(dns_backup["last image"])):]
+            all_images = all_images[(all_images.index(dns_backup["last image"]))+1:]
 
             checkpoint = False
 
@@ -150,7 +150,7 @@ for folder in pathing_all_sets: # All sets
 
                 for i in range(0,10):
                     
-                    print(f"Checkpoint reached at {folder}/{category}, {(i+1)/length_folder:.2f} % completed")
+                    print(f"Checkpoint reached at {folder}/{category}, {((i+1)/length_folder):.2f} % completed")
 
     subset_dn[folder] = dict({"Race" : race_subset, "Gender" : gender_subset})
     bad_files[folder] = dict({"Bad Images" : bad_images, "Bad Count" : bad_count_dn})
